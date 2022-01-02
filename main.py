@@ -1,5 +1,8 @@
 import galaxy
 import spreadsheet_interface as spin
+import numpy as np
+import matplotlib.pyplot as plt
+import gc
 
 
 # FOLLOWING: Constants
@@ -116,17 +119,148 @@ def select_target_menu():
     indiv_target_menu(g, False)
 
 
+def print_all_seds():
+    save_folder = r"C:\Users\bderi\Desktop\Research Boizelle\AutoSED"
+    name_list = spin.target_list()
+    for i in range(len(name_list)):
+        try:
+            g = spin.get_set_n(i)
+            g.display_sed(savefig=True, savefolder=save_folder)
+            del g
+            gc.collect()
+        except:
+            pass
+
+
+def print_set_of_seds():
+    save_folder = r"C:\Users\bderi\Desktop\Research Boizelle"
+    print("\nSelect targets for which to print SEDs:")
+    name_list = spin.target_list()
+    for i in range(len(name_list)):
+        print("\t" + str(i) + ": " + name_list[i])
+    selections = input("Enter selection:")
+    selections = selections.split(",")
+    for i in range(len(selections)):
+        selections[i] = int(selections[i])
+    xplots = 3
+    yplots = 7
+    layout_dict = {
+        "w_pad": 1,
+        "h_pad": 30
+    }
+    fig, axs = plt.subplots(xplots, yplots, sharex=True, sharey=True, tight_layout=layout_dict, figsize=(11, 5))
+    selection_iter = 0
+    tele_list = []
+    pointlist = []
+    for h in range(xplots):
+        for k in range(yplots):
+            g = spin.get_set_n(selections[selection_iter])
+            """
+            for i in range(len(g.freq_list)):
+                if any(ele == g.telescope_list[i] for ele in tele_list):
+                    axs[h, k].plot(g.freq_list[i], g.flux_list[i], linestyle="None", color=g.point_colors[i],
+                                   marker=g.point_types[i],
+                                   markersize=4)
+                else:  # unique point
+                    pointlist.append(None)
+                    pointlist[-1], = axs[h, k].plot(g.freq_list[i], g.flux_list[i], linestyle="None", color=g.point_colors[i],
+                             marker=g.point_types[i],
+                             markersize=4)
+                    tele_list.append(g.telescope_list[i])
+            """
+            for i in range(len(g.freq_list)):
+                if g.straightuptelelist[i] == "ALMA (Nuclear)":
+                    axs[h, k].plot(g.freq_list[i], g.flux_list[i], linestyle="None",
+                                                    color="rebeccapurple",
+                                                    marker="v",
+                                                    markersize=4)
+                elif g.straightuptelelist[i] == "ALMA (Extended)":
+                    axs[h, k].plot(g.freq_list[i], g.flux_list[i], linestyle="None",
+                                                    color="rebeccapurple",
+                                                    marker="^",
+                                                    markersize=5)
+                else:  # unique point
+                    axs[h, k].plot(g.freq_list[i], g.flux_list[i], linestyle="None",
+                                   color="peru",
+                                   marker="+",
+                                   markersize=4)
+            axs[h, k].set_yscale('log')
+            axs[h, k].set_xscale('log')
+            axs[h, k].set_xlim(5e8, 4e14)
+            axs[h, k].set_ylim(2*10**-4, 2000)
+            axs[h, k].tick_params(which="both", axis="y", direction="in", pad=5, labelsize=7)
+            axs[h, k].tick_params(which="both", axis="x", direction="in", labelsize=7)
+            axs[h, k].set_title("   " + g.name, fontdict={"fontsize": 6}, loc="left", y=.8)
+            axs[h, k].minorticks_off()
+            # yticks = axs[h, k].get_yticks()
+            # for i in range(len(yticks)):
+            #     yticks[i] = np.round(np.log10(yticks[i]), 0)
+            # axs[h, k].set_yticklabels(yticks)
+            # xticks = axs[h, k].get_xticks()
+            # for i in range(len(xticks)):
+            #     xticks[i] = np.round(np.log10(xticks[i]), 0)
+            # axs[h, k].set_xticklabels(xticks)
+            if ([h, k] == [0, 0]) or ([h, k] == [0, 1]) or ([h, k] == [0, 2]) or ([h, k] == [0, 3]) or \
+                    ([h, k] == [0, 4]) or ([h, k] == [0, 5]) or ([h, k] == [0, 6]) or ([h, k] == [1, 0]) or \
+                    ([h, k] == [1, 1]) or ([h, k] == [1, 2]) or ([h, k] == [1, 3]) or ([h, k] == [1, 4]) or \
+                    ([h, k] == [1, 5]):
+                for axis in ['top', 'bottom', 'left', 'right']:
+                    axs[h, k].spines[axis].set_linewidth(3)
+
+            fit_list = spin.read_fits(g.name)
+            if fit_list != []:
+                for i in range(len(fit_list)):
+                    if fit_list[i][0] == 'mod_blackbody':
+                        xrange = np.arange(5e8, 4e14, 100000000000)
+                        fitplot = g.mod_blackbody_model([fit_list[i][1],
+                                                            fit_list[i][2],
+                                                            fit_list[i][3]], xrange)
+                    elif fit_list[i][0] == 'power_law':
+                        xrange = np.arange(5e8, 4e14, 100000000000)
+                        fitplot = g.power_law_model([fit_list[i][1], fit_list[i][2]], xrange)
+                    axs[h, k].plot(xrange, fitplot, color='black', linestyle=fit_list[i][6])
+            selection_iter += 1
+    # plt.style.use('classic')
+    # axs[0, 6].legend(pointlist, tele_list, fontsize=9, bbox_to_anchor=(1, 1),
+    #            loc='upper left', ncol=1)
+    plt.subplots_adjust(bottom=.15, hspace=0, wspace=0, right=.8)
+    axs[2, 3].set_xlabel("Rest Frequency (Hz)")
+    axs[1, 0].set_ylabel("Flux Density (Jy)")
+    plt.savefig(save_folder + "\\all_seds_w_alma", dpi=500)
+    plt.show()
+    return None
+
+
 # FOLLOWING: Main function/menu loop
 menu_loop = True
 while menu_loop is True:
     print("\nMain Menu:\n",
           "\t0: Select target\n",
-          "\t1: Quit\n")
+          "\t1: Print all SEDs\n",
+          "\t2: Print set of SEDs\n",
+          "\t3: Quit\n")
     user_selection = input("Enter selection:")
     if user_selection == '0':
         select_target_menu()
     elif user_selection == '1':
+        print("Printing all SEDs.  This could take a few minutes . . . ")
+        print_all_seds()
+        menu_loop = False
+    elif user_selection == '2':
+        print_set_of_seds()
+        menu_loop = False
+    elif user_selection == '3':
         menu_loop = False
     else:
         print("Invalid input -- quitting program . . . ")
         menu_loop = False
+
+# ic1531, ngc612, pks718, ngc3100, eso443, ngc3557, ic4296, ngc7075, ic1459
+# ngc4945, ngc1399, ngc4594, ngc4751, ngc6861, ngc1600
+# 44, 40, 46, 41, 45, 37, 5, 42, 43
+
+# 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21
+
+# 40, 41, 45, 37, 5, 42, 43, 62, 48, 63, 64, 4, 65, 47, 28, 7, 10, 15, 18, 16, 20
+
+# 40, 41, 45, 37, 5, 42, 43, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2
