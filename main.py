@@ -133,7 +133,7 @@ def print_all_seds():
 
 
 def print_set_of_seds():
-    save_folder = r"C:\Users\bderi\Desktop\Research Boizelle"
+    save_folder = r"C:\Users\bderi\Desktop"
     print("\nSelect targets for which to print SEDs:")
     name_list = spin.target_list()
     for i in range(len(name_list)):
@@ -150,24 +150,9 @@ def print_set_of_seds():
     }
     fig, axs = plt.subplots(xplots, yplots, sharex=True, sharey=True, tight_layout=layout_dict, figsize=(11, 5))
     selection_iter = 0
-    tele_list = []
-    pointlist = []
     for h in range(xplots):
         for k in range(yplots):
             g = spin.get_set_n(selections[selection_iter])
-            """
-            for i in range(len(g.freq_list)):
-                if any(ele == g.telescope_list[i] for ele in tele_list):
-                    axs[h, k].plot(g.freq_list[i], g.flux_list[i], linestyle="None", color=g.point_colors[i],
-                                   marker=g.point_types[i],
-                                   markersize=4)
-                else:  # unique point
-                    pointlist.append(None)
-                    pointlist[-1], = axs[h, k].plot(g.freq_list[i], g.flux_list[i], linestyle="None", color=g.point_colors[i],
-                             marker=g.point_types[i],
-                             markersize=4)
-                    tele_list.append(g.telescope_list[i])
-            """
             for i in range(len(g.freq_list)):
                 if g.straightuptelelist[i] == "ALMA (Nuclear)":
                     axs[h, k].plot(g.freq_list[i], g.flux_list[i], linestyle="None",
@@ -192,14 +177,10 @@ def print_set_of_seds():
             axs[h, k].tick_params(which="both", axis="x", direction="in", labelsize=7)
             axs[h, k].set_title("   " + g.name, fontdict={"fontsize": 6}, loc="left", y=.8)
             axs[h, k].minorticks_off()
-            # yticks = axs[h, k].get_yticks()
-            # for i in range(len(yticks)):
-            #     yticks[i] = np.round(np.log10(yticks[i]), 0)
-            # axs[h, k].set_yticklabels(yticks)
-            # xticks = axs[h, k].get_xticks()
-            # for i in range(len(xticks)):
-            #     xticks[i] = np.round(np.log10(xticks[i]), 0)
-            # axs[h, k].set_xticklabels(xticks)
+            axs[h, k].set_yticks((10**-2, 1, 10**2))
+            axs[h, k].set_yticklabels([-2, 0, 2])
+            axs[h, k].set_xticks((10 ** 10, 10 ** 13))
+            axs[h, k].set_xticklabels([10, 13])
             if ([h, k] == [0, 0]) or ([h, k] == [0, 1]) or ([h, k] == [0, 2]) or ([h, k] == [0, 3]) or \
                     ([h, k] == [0, 4]) or ([h, k] == [0, 5]) or ([h, k] == [0, 6]) or ([h, k] == [1, 0]) or \
                     ([h, k] == [1, 1]) or ([h, k] == [1, 2]) or ([h, k] == [1, 3]) or ([h, k] == [1, 4]) or \
@@ -220,12 +201,9 @@ def print_set_of_seds():
                         fitplot = g.power_law_model([fit_list[i][1], fit_list[i][2]], xrange)
                     axs[h, k].plot(xrange, fitplot, color='black', linestyle=fit_list[i][6])
             selection_iter += 1
-    # plt.style.use('classic')
-    # axs[0, 6].legend(pointlist, tele_list, fontsize=9, bbox_to_anchor=(1, 1),
-    #            loc='upper left', ncol=1)
     plt.subplots_adjust(bottom=.15, hspace=0, wspace=0, right=.8)
-    axs[2, 3].set_xlabel("Rest Frequency (Hz)")
-    axs[1, 0].set_ylabel("Flux Density (Jy)")
+    axs[2, 3].set_xlabel("log$_{10}$ Rest Frequency (Hz)")
+    axs[1, 0].set_ylabel("log$_{10}$ Flux Density (Jy)")
     plt.savefig(save_folder + "\\all_seds_w_alma", dpi=500)
     plt.show()
     return None
@@ -255,12 +233,7 @@ while menu_loop is True:
         print("Invalid input -- quitting program . . . ")
         menu_loop = False
 
-# ic1531, ngc612, pks718, ngc3100, eso443, ngc3557, ic4296, ngc7075, ic1459
-# ngc4945, ngc1399, ngc4594, ngc4751, ngc6861, ngc1600
-# 44, 40, 46, 41, 45, 37, 5, 42, 43
-
-# 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21
+# Set 1: ic1531, ngc612, pks718, ngc3100, eso443, ngc3557, ic4296, ngc7075, ic1459
+# Set 2: ngc4945, ngc1399, ngc4594, ngc4751, ngc6861, ngc1600
 
 # 40, 41, 45, 37, 5, 42, 43, 62, 48, 63, 64, 4, 65, 47, 28, 7, 10, 15, 18, 16, 20
-
-# 40, 41, 45, 37, 5, 42, 43, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2

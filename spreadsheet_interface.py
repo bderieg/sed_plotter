@@ -205,10 +205,9 @@ def target_list():
 def get_point_styles():
     wb = opxl.load_workbook(spreadsheet_loc, data_only=True, read_only=True)
     sheet = wb.get_sheet_by_name("Point Styles")
-    row_list = list(sheet.iter_rows(values_only=True))
 
     # Define first row and column
-    row_start = len(row_list) - 3
+    row_start = 1
     column_start = 2
 
     # Populate the list to return, going from top to bottom
