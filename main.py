@@ -3,10 +3,13 @@ import spreadsheet_interface as spin
 import numpy as np
 import matplotlib.pyplot as plt
 import gc
+from astropy.io import fits
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 # FOLLOWING: Constants
-spreadsheet_loc = r"C:\Users\bderi\Desktop\Research Boizelle\ALMA Archive Galaxy Observations with SED Flux Densities"
+spreadsheet_loc = r"C:\Users\bderi\Box\School\Research Boizelle\ALMA Archive Galaxy Observations with SED Flux Densities"
+fits_loc = r"C:\Users\bderi\Box\School\Research Boizelle\FITS"
 
 # FOLLOWING: Menu functions
 
@@ -208,6 +211,87 @@ def print_set_of_seds():
     plt.show()
     return None
 
+def sed_w_alma():
+    save_folder = r"C:\Users\bderi\Desktop\ALMA Images with SEDs"
+    asec_spacing = 6
+    ext_flux_spacing = .0002
+    nuc_flux_spacing = .005
+
+    # Get user input for which target to display
+    print("\nSelect target to work with:")
+    name_list = spin.target_list()
+    for i in range(len(name_list)):
+        print("\t" + str(i) + ": " + name_list[i])
+    print("\t" + str(len(name_list)) + ": Return to main menu\n")
+    selection = input("Enter selection:")
+    selection = int(selection)
+    if selection == len(name_list):
+        return None
+    else:
+        g = spin.get_set_n(selection)
+
+    # Put SED on the top
+    fig, axs = plt.subplots(2, 3)
+    axs[0, 0] = plt.subplot2grid((3, 2), (0, 0), colspan=3)
+    axs[0, 0] = g.display_sed(give_as_subplot=True, scaling=.7)
+
+    # Put the images on the bottom
+    file1_name = fits_loc + "\\" + g.name.replace(" ", "") + r"ALMANuclearNat.fits"
+    cont_map = fits.open(file1_name)
+    try:
+        file2_name = fits_loc + "\\" + g.name.replace(" ", "") + r"ALMAExtendedLowerNat.fits"
+        file3_name = fits_loc + "\\" + g.name.replace(" ", "") + r"ALMAExtendedUpperNat.fits"
+        lower_sub_map = fits.open(file2_name)
+        upper_sub_map = fits.open(file3_name)
+    except:
+        file2_name = fits_loc + "\\" + g.name.replace(" ", "") + r"ALMAExtendedNoiseNat.fits"
+        file3_name = file2_name
+        lower_sub_map = fits.open(file2_name)
+        upper_sub_map = fits.open(file3_name)
+
+    colormap = "pink"
+
+    image_size = np.round((3600 * (cont_map[0].header['CDELT2'] * len(cont_map[0].data[0][0]))), 2)  # In arc seconds
+    firstfig = axs[1, 0].imshow(cont_map[0].data[0][0], cmap=colormap,
+                             extent=(image_size / 2, -image_size / 2, -image_size / 2, image_size / 2))
+    secondfig = axs[1, 1].imshow(lower_sub_map[0].data[0][0], cmap=colormap,
+                              extent=(image_size / 2, -image_size / 2, -image_size / 2, image_size / 2))
+    thirdfig = axs[1, 2].imshow(upper_sub_map[0].data[0][0], cmap=colormap,
+                             extent=(image_size / 2, -image_size / 2, -image_size / 2, image_size / 2))
+
+    plt.setp(axs[1, 0], ylabel=r"$\Delta$ decl. (arcsec)")
+    plt.setp(axs[1, 1], xlabel=r"$\Delta$ R.A. (arcsec)")
+
+    d1 = make_axes_locatable(axs[1, 0])
+    axs[1, 0].set_xticks((-asec_spacing, 0, asec_spacing))
+    axs[1, 0].set_yticks((-asec_spacing, 0, asec_spacing))
+    cax1 = d1.append_axes("top", size="10%", pad=0.3)
+    cbar1 = plt.colorbar(firstfig, cax=cax1, orientation="horizontal", ticks=(0, nuc_flux_spacing, 2*nuc_flux_spacing, 3*nuc_flux_spacing, 4*nuc_flux_spacing))
+    cbar1.ax.tick_params(top=True, bottom=False, pad=-30)
+    cbar1.ax.set_xlabel("Flux (mJy/beam)", fontdict={'fontsize': 8.5})
+    cbar1.ax.set_xticklabels(['0', 1000*nuc_flux_spacing, 2*1000*nuc_flux_spacing, 3*1000*nuc_flux_spacing, 4*1000*nuc_flux_spacing])
+
+    d2 = make_axes_locatable(axs[1, 1])
+    axs[1, 1].set_xticks((-asec_spacing, 0, asec_spacing))
+    axs[1, 1].set_yticks((-asec_spacing, 0, asec_spacing))
+    cax2 = d2.append_axes("top", size="10%", pad=0.3)
+    cbar2 = plt.colorbar(secondfig, cax=cax2, orientation="horizontal", ticks=(-2*ext_flux_spacing, -ext_flux_spacing, 0, ext_flux_spacing, 2*ext_flux_spacing))
+    cbar2.ax.tick_params(top=True, bottom=False, pad=-30)
+    cbar2.ax.set_xlabel("Flux (mJy/beam)", fontdict={'fontsize': 8.5})
+    cbar2.ax.set_xticklabels([-2*ext_flux_spacing*1000, -ext_flux_spacing*1000, '0.0', ext_flux_spacing*1000, 2*ext_flux_spacing*1000])
+
+    d3 = make_axes_locatable(axs[1, 2])
+    axs[1, 2].set_xticks((-asec_spacing, 0, asec_spacing))
+    axs[1, 2].set_yticks((-asec_spacing, 0, asec_spacing))
+    cax3 = d3.append_axes("top", size="10%", pad=0.3)
+    cbar3 = plt.colorbar(thirdfig, cax=cax3, orientation="horizontal", ticks=(-2*ext_flux_spacing, -ext_flux_spacing, 0, ext_flux_spacing, 2*ext_flux_spacing))
+    cbar3.ax.tick_params(top=True, bottom=False, pad=-30)
+    cbar3.ax.set_xlabel("Flux (mJy/beam)", fontdict={'fontsize': 8.5})
+    cbar3.ax.set_xticklabels([-2*ext_flux_spacing*1000, -ext_flux_spacing*1000, '0.0', ext_flux_spacing*1000, 2*ext_flux_spacing*1000])
+
+    plt.savefig(save_folder + "\\" + g.name.replace(" ", "") + "_sed_w_alma_images", dpi=500)
+    plt.show()
+
 
 # FOLLOWING: Main function/menu loop
 menu_loop = True
@@ -216,7 +300,8 @@ while menu_loop is True:
           "\t0: Select target\n",
           "\t1: Print all SEDs\n",
           "\t2: Print set of SEDs\n",
-          "\t3: Quit\n")
+          "\t3: Print SED next to ALMA images\n"
+          "\t4: Quit\n")
     user_selection = input("Enter selection:")
     if user_selection == '0':
         select_target_menu()
@@ -228,6 +313,9 @@ while menu_loop is True:
         print_set_of_seds()
         menu_loop = False
     elif user_selection == '3':
+        sed_w_alma()
+        menu_loop = False
+    elif user_selection == '4':
         menu_loop = False
     else:
         print("Invalid input -- quitting program . . . ")

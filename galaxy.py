@@ -103,7 +103,7 @@ class Galaxy:
             fit_range[1] += num_exclusions
             spin.new_fit(self.name, fit_type, [a_param, alpha_param], fit_range, linestyle)
 
-    def display_sed(self, savefig=False, savefolder=""):
+    def display_sed(self, savefig=False, savefolder="", give_as_subplot=False, scaling=1):
         # This function just plots all the points, along with any saved fits.
 
         # Make point list
@@ -119,21 +119,21 @@ class Galaxy:
         unique_tele_list = []
         for i in range(len(self.freq_list)):
             if any(ele == self.point_types[i] for ele in previous_points):
-                plt.plot(self.freq_list[i], self.flux_list[i], color=self.point_colors[i], marker=self.point_types[i], markersize=7)
+                plt.plot(self.freq_list[i], self.flux_list[i], color=self.point_colors[i], marker=self.point_types[i], markersize=7*scaling*.7)
             else:
                 pointlist[legend_counter], = plt.plot(self.freq_list[i], self.flux_list[i], color=self.point_colors[i],
-                                                      marker=self.point_types[i], linestyle='None', markersize=7) # 9
+                                                      marker=self.point_types[i], linestyle='None', markersize=7*scaling*.7)
                 previous_points.append(self.point_types[i])
                 unique_tele_list.append(self.telescope_list[i])
                 legend_counter += 1
 
         # Title plot, create legend, error bars, etc.
-        plt.title('SED for ' + self.name, fontsize=15) # 20
+        plt.title('SED for ' + self.name, fontsize=15*scaling)
         plt.yscale('log')
         plt.xscale('log')
-        plt.xlabel('Rest Frequency (Hz)', fontsize=10) # 15
-        plt.ylabel('Flux Density (Jy)', fontsize=10) # 15
-        plt.legend(pointlist, unique_tele_list, fontsize=10, bbox_to_anchor=(1, 1), loc='upper left')  # fsize 15 Put kwargs (bbox_to_anchor=(1, 1), loc='upper left') to put legend outside
+        plt.xlabel('$\log$ Rest Frequency (Hz)', fontsize=10*scaling)
+        plt.ylabel('$\log$ Flux Density (Jy)', fontsize=10*scaling)
+        plt.legend(pointlist, unique_tele_list, fontsize=10*scaling, bbox_to_anchor=(1, 1), loc='upper left')  # fsize 15 Put kwargs (bbox_to_anchor=(1, 1), loc='upper left') to put legend outside
         for i in range(len(self.freq_list)):  # Plot error bars ELSE upper limits if 0 given as upper error
             if (self.error_lists[1][i] == 'Limit') or (self.error_lists[1][i] == 'limit'):
                 plt.errorbar(self.freq_list[i], self.flux_list[i], yerr=self.flux_list[i]/5, fmt='none', ecolor='black', uplims=self.flux_list[i])
@@ -168,16 +168,20 @@ class Galaxy:
 
         # Make axes
         axes = plt.gca()
+        axes.set_yticks((10**-4, 10**-3, 10**-2, 10**-1, 10**0, 10**1, 10**2, 10**3, 10**4))
+        axes.set_yticklabels(["-4", "-3", "-2", "-1", "0", "1", "2", "3", "4"])
         axes.set_xlim(x_lower, x_upper)
+        axes.set_xticks((10**10, 10**12, 10**14))
+        axes.set_xticklabels(["10", "12", "14"])
         axes.set_aspect(1)
-        axes.tick_params(labelsize=10)
+        axes.tick_params(labelsize=10*scaling)
         x_axis_wl = axes.secondary_xaxis('top', functions=(freq_to_wl, wl_to_freq))
-        x_axis_wl.tick_params(labelsize=10)
-        x_axis_wl.set_xlabel("Rest Wavelength", fontsize=10)
+        x_axis_wl.tick_params(labelsize=10*scaling*.8)
+        x_axis_wl.set_xlabel("Rest Wavelength", fontsize=10*scaling)
         x_axis_wl.get_xaxis().set_tick_params(which='minor', size=0)
         x_axis_wl.get_xaxis().set_tick_params(which='minor', width=0)
         axes.set_ylim(y_lower, y_upper)
-        # This code throws an error, but it works, so . . .
+        x_axis_wl.set_xticks((.00000001, .0000001, .000001, .00001, .0001, .001, .01, .1))
         labels = ['.1 \u03bcm', '1 \u03bcm', '10 \u03bcm', '100 \u03bcm', '1 mm', '1 cm', '10 cm', '1 m']
         x_axis_wl.set_xticklabels(labels)
 
@@ -188,12 +192,15 @@ class Galaxy:
             left_side = pah_freqs[i] - (box_width * (np.sqrt(10))/10)
             axes.add_patch(Rectangle((left_side, 0), box_width, 100, facecolor='lightgray'))
 
-        plt.tight_layout(h_pad=1.8)
+        plt.tight_layout(h_pad=1.8*scaling)
         if savefig:
             plt.savefig(savefolder + "\\sed_" + self.name)
             plt.clf()
             return None
-        plt.show()
+        if give_as_subplot:
+            return plt
+        else:
+            plt.show()
 
     # FOLLOWING: Chi-square fitting functions
 
